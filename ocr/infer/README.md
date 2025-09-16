@@ -9,39 +9,50 @@ ocr/infer/
 ├── hpp/                    # 头文件目录
 │   ├── ocr_detector.hpp    # 文本检测器头文件
 │   ├── ocr_recognizer.hpp  # 文本识别器头文件
-│   └── ocr_pipeline.hpp    # OCR流水线头文件
+│   ├── ocr_orientation.hpp # 文档方向检测器头文件
+│   ├── ocr_pipeline.hpp    # OCR流水线头文件
+│   ├── engine.hpp          # TensorRT引擎封装头文件
+│   └── utils.hpp           # 工具函数头文件
 ├── cpp/                    # 源文件目录
 │   ├── ocr_detector.cpp    # 文本检测器实现
 │   ├── ocr_recognizer.cpp  # 文本识别器实现
+│   ├── ocr_orientation.cpp # 文档方向检测器实现
 │   ├── ocr_pipeline.cpp    # OCR流水线实现
+│   ├── engine.cpp          # TensorRT引擎封装实现
+│   ├── utils.cpp           # 工具函数实现
 │   └── main.cpp           # 主程序
+├── build_release/          # 构建输出目录
 ├── CMakeLists.txt         # CMake构建文件
-├── build.sh              # 构建脚本
-└── README.md             # 项目说明文档
+├── config.h               # 配置文件
+├── export.sh              # 模型导出脚本
+├── final_dict.txt         # 字典文件
+└── README.md              # 项目说明文档
 ```
 
 ## 功能特性
 
 - **文本检测**: 基于PP-OCRv5检测模型，支持任意形状文本检测
 - **文本识别**: 基于PP-OCRv5识别模型，支持中英文混合识别
+- **文档方向检测**: 基于PP-LCNet_x1_0_textline_ori模型，自动检测文档方向
 - **GPU加速**: 使用TensorRT进行GPU加速推理
-- **实时处理**: 支持摄像头实时OCR识别
-- **批量处理**: 支持批量图像处理
+- **配置化运行**: 通过config.h文件进行参数配置
+- **模块化设计**: 独立的检测器、识别器和方向检测器模块
 - **可视化**: 支持检测结果可视化显示
+- **性能监控**: 内置推理时间统计
 
 ## 依赖要求
 
 ### 系统要求
 - Linux (Ubuntu 18.04+)
-- CUDA 11.0+
-- TensorRT 8.0+
+- CUDA 12.0+
+- TensorRT 10.0+
 - OpenCV 4.0+
 
 ### 必需依赖
 - **CMake**: 3.10+
 - **OpenCV**: 4.0+
-- **CUDA**: 11.0+
-- **TensorRT**: 8.0+
+- **CUDA**: 12.0+
+- **TensorRT**: 10.0+
 - **C++编译器**: GCC 7.0+ 或 Clang 6.0+
 
 ## 安装依赖
@@ -75,69 +86,65 @@ sudo make install
 
 ## 编译构建
 
-### 1. 克隆项目
+### 1. 环境准备
+确保以下路径正确配置（在CMakeLists.txt中）：
+- OpenCV路径: `/home/opt/local/opencv-4.8.0/release`
+- CUDA路径: `/usr/local/cuda`
+- TensorRT路径: `/home/opt/local/tensorrt`
+
+### 2. 手动构建
 ```bash
-git clone <your-repo-url>
 cd ocr/infer
-```
-
-### 2. 运行构建脚本
-```bash
-# 给构建脚本执行权限
-chmod +x build.sh
-
-# 构建Release版本
-./build.sh release
-
-# 构建Debug版本
-./build.sh debug
-```
-
-### 3. 手动构建
-```bash
-mkdir build && cd build
+mkdir build_release && cd build_release
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
 ```
 
+### 3. 构建输出
+构建完成后，可执行文件 `ocr_demo` 将生成在 `build_release` 目录中。
+
 ## 使用方法
 
-### 1. 准备模型文件
-确保你有以下文件：
-- `PP-OCRv5_server_det.trt`: 检测模型（TensorRT格式）
-- `PP-OCRv5_server_rec.trt`: 识别模型（TensorRT格式）
-- `dict.txt`: 字典文件
+### 1. 配置参数
+编辑 `config.h` 文件，设置模型路径和参数：
+
+```cpp
+namespace OCRConfig {
+    // 模型文件路径配置
+    const std::string DET_MODEL_PATH = "/path/to/PP-OCRv5_server_det.trt";
+    const std::string REC_MODEL_PATH = "/path/to/PP-OCRv5_server_rec.trt";
+    const std::string ORI_MODEL_PATH = "/path/to/PP-OCRv5_server_ori.trt";
+    const std::string DICT_PATH = "/path/to/final_dict.txt";
+    
+    // 图像路径配置
+    const std::string IMAGE_PATH = "/path/to/your/image.jpg";
+    
+    // 输出配置
+    const std::string OUTPUT_PATH = "/path/to/output_result.jpg";
+    
+    // 推理参数配置
+    const float DET_THRESHOLD = 0.3f;
+    const float DET_BOX_THRESHOLD = 0.6f;
+    const float UNCLIP_RATIO = 1.5f; 
+    const float REC_THRESHOLD = 0.5f;
+    
+    // 保存配置
+    const bool SAVE_RESULT = true;
+}
+```
 
 ### 2. 运行OCR识别
-
-#### 处理单张图像
 ```bash
 cd build_release
-./run_ocr.sh PP-OCRv5_server_det.trt PP-OCRv5_server_rec.trt dict.txt test.jpg
+./ocr_demo
 ```
 
-#### 使用摄像头实时识别
-```bash
-cd build_release
-./run_ocr.sh PP-OCRv5_server_det.trt PP-OCRv5_server_rec.trt dict.txt
-```
-
-#### 直接运行可执行文件
-```bash
-cd build_release
-./ocr_demo PP-OCRv5_server_det.trt PP-OCRv5_server_rec.trt dict.txt test.jpg
-```
-
-### 3. 程序参数说明
-```
-Usage: ocr_demo <det_model_path> <rec_model_path> <dict_path> [image_path]
-
-参数说明:
-- det_model_path: 检测模型文件路径 (.trt格式)
-- rec_model_path: 识别模型文件路径 (.trt格式)
-- dict_path: 字典文件路径 (.txt格式)
-- image_path: 图像文件路径 (可选，不提供则使用摄像头)
-```
+### 3. 程序输出
+程序将输出：
+- 模型加载状态
+- 图像处理时间
+- 识别结果（文本内容、置信度、坐标）
+- 结果图像保存路径（如果启用）
 
 ## API使用示例
 
@@ -149,8 +156,8 @@ int main() {
     // 创建OCR流水线
     OCRPipeline ocr_pipeline;
     
-    // 初始化
-    if (!ocr_pipeline.initialize("det_model.trt", "rec_model.trt", "dict.txt")) {
+    // 初始化（包含方向检测）
+    if (!ocr_pipeline.initialize("det_model.trt", "ori_model.trt", "rec_model.trt", "dict.txt", 0.5f)) {
         return -1;
     }
     
@@ -163,7 +170,9 @@ int main() {
     // 处理结果
     for (const auto& result : results) {
         std::cout << "Text: " << result.text << std::endl;
-        std::cout << "Confidence: " << result.overall_confidence << std::endl;
+        std::cout << "Detection confidence: " << result.detection_confidence << std::endl;
+        std::cout << "Recognition confidence: " << result.recognition_confidence << std::endl;
+        std::cout << "Overall confidence: " << result.overall_confidence << std::endl;
     }
     
     return 0;
@@ -207,6 +216,91 @@ int main() {
 }
 ```
 
+### 使用方向检测器
+```cpp
+#include "hpp/ocr_orientation.hpp"
+
+int main() {
+    OCROrientation orientation;
+    orientation.initialize("ori_model.trt");
+    
+    cv::Mat image = cv::imread("test.jpg");
+    auto result = orientation.infer(image);
+    
+    std::cout << "Orientation label: " << result.label << std::endl;
+    std::cout << "Label name: " << result.label_name << std::endl;
+    std::cout << "Confidence: " << result.confidence << std::endl;
+    
+    return 0;
+}
+```
+
+## 模型导出和转换
+
+### 1. PaddlePaddle模型转ONNX
+使用 `export.sh` 脚本中的命令将PaddlePaddle模型转换为ONNX格式：
+
+```bash
+# 检测模型转换
+paddle2onnx \
+  --model_dir /path/to/PP-OCRv5_server_det \
+  --model_filename inference.json \
+  --params_filename inference.pdiparams \
+  --save_file /path/to/PP-OCRv5_server_det.onnx \
+  --opset_version 18 \
+  --enable_onnx_checker True
+
+# 方向检测模型转换
+paddle2onnx \
+  --model_dir /path/to/PP-LCNet_x1_0_textline_ori \
+  --model_filename inference.json \
+  --params_filename inference.pdiparams \
+  --save_file /path/to/PP-OCRv5_server_ori.onnx \
+  --opset_version 18 \
+  --enable_onnx_checker True
+
+# 识别模型转换
+paddle2onnx \
+  --model_dir /path/to/PP-OCRv5_server_rec \
+  --model_filename inference.json \
+  --params_filename inference.pdiparams \
+  --save_file /path/to/PP-OCRv5_server_rec.onnx \
+  --opset_version 18 \
+  --enable_onnx_checker True
+```
+
+### 2. ONNX模型转TensorRT
+使用TensorRT的trtexec工具将ONNX模型转换为TensorRT引擎：
+
+```bash
+# 检测模型转换
+trtexec \
+  --onnx=/path/to/PP-OCRv5_server_det.onnx \
+  --saveEngine=/path/to/PP-OCRv5_server_det.trt \
+  --fp16 \
+  --minShapes=x:1x3x1920x1920 \
+  --optShapes=x:1x3x1920x1920 \
+  --maxShapes=x:1x3x1920x1920
+
+# 方向检测模型转换
+trtexec \
+  --onnx=/path/to/PP-OCRv5_server_ori.onnx \
+  --saveEngine=/path/to/PP-OCRv5_server_ori.trt \
+  --fp16 \
+  --minShapes=x:1x3x80x160 \
+  --optShapes=x:12x3x80x160 \
+  --maxShapes=x:24x3x80x160
+
+# 识别模型转换
+trtexec \
+  --onnx=/path/to/PP-OCRv5_server_rec.onnx \
+  --saveEngine=/path/to/PP-OCRv5_server_rec.trt \
+  --fp16 \
+  --minShapes=x:1x3x48x1920 \
+  --optShapes=x:1x3x48x1920 \
+  --maxShapes=x:1x3x48x1920
+```
+
 ## 性能优化
 
 ### 1. 模型优化
@@ -244,24 +338,24 @@ int main() {
 ## 扩展开发
 
 ### 1. 添加新的预处理方法
-在 `ocr_detector.cpp` 或 `ocr_recognizer.cpp` 中修改 `preprocess` 函数。
+在 `ocr_detector.cpp`、`ocr_recognizer.cpp` 或 `ocr_orientation.cpp` 中修改 `preprocess` 函数。
 
 ### 2. 自定义后处理
 在 `postprocess` 函数中添加自定义的后处理逻辑。
 
 ### 3. 支持新的模型格式
-修改 `loadEngine` 函数以支持其他模型格式。
+修改 `engine.cpp` 中的 `loadEngine` 函数以支持其他模型格式。
 
-## 许可证
+### 4. 配置参数调整
+在 `config.h` 中调整各种阈值和参数：
+- `DET_THRESHOLD`: 检测置信度阈值
+- `DET_BOX_THRESHOLD`: 检测框NMS阈值
+- `REC_THRESHOLD`: 识别置信度阈值
+- `UNCLIP_RATIO`: 检测框扩展比例
 
-本项目基于MIT许可证开源。
+### 5. 添加新的工具函数
+在 `utils.cpp` 中添加通用的工具函数。
 
-## 贡献
 
-欢迎提交Issue和Pull Request来改进这个项目。
 
-## 联系方式
 
-如有问题，请通过以下方式联系：
-- 提交GitHub Issue
-- 发送邮件至：[your-email@example.com]
