@@ -1,0 +1,34 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/include",
+                "/usr/local/include",
+                "/usr/include/c++/11",
+                "/usr/include/x86_64-linux-gnu",
+                "/usr/include/x86_64-linux-gnu/c++/11",
+                "/home/opt/local/opencv-4.8.0/release/include",
+                "/home/opt/local/opencv-4.8.0/release/include/opencv4",
+                "/home/opt/local/tensorrt/include",
+                "/usr/local/cuda/include",
+                "/usr/local/include/drogon",
+                "/usr/include/x86_64-linux-gnu/curl"
+            ],
+            "defines": [],
+            // "configurationProvider": "ms-vscode.cmake-tools",
+            "compileCommands": "/home/work/liwenkai/c_learn/build/compile_commands.json",
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-gcc-x64",
+            "compilerArgs": [
+                "-std=c++17",
+                "-Wall",
+                "-Wextra"
+            ]
+        }
+    ],
+    "version": 4
+} 
