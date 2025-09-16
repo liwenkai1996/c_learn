@@ -1,0 +1,7 @@
+paddleocr/
+paddlex/
+det_debug/
+ocr_rois/
+build/
+images/
+ocr/infer/build_release/

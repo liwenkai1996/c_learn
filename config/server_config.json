@@ -1,0 +1,6 @@
+{
+  "model_path": "/home/model/od/rf-detr/xn/inference_model_sim_1680x1680_v10.trt",
+  "port": 7815,
+  "device_id": 0,
+  "threads": 4
+}
